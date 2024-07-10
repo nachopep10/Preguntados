@@ -19,9 +19,7 @@ color_activo = pygame.Color(BLANCO)
 color = color_inactivo
 activo = False
 
-color_boton_a = BLANCO
-color_boton_b = BLANCO
-color_boton_c = BLANCO
+
 
 puntaje_actual = 0
 pregunta_actual = 0
@@ -54,6 +52,7 @@ while running:
             elif jugando:
                 if boton_pregunta.collidepoint(event.pos):
                     pregunta_actual += 1
+                    resetear_colores_botones()
                     preguntas(pregunta_actual)
                 elif boton_reiniciar.collidepoint(event.pos):
                     reiniciar()

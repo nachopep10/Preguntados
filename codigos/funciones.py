@@ -104,6 +104,10 @@ fianl_score = pygame.Rect(40, 150, 300, 60)
 final_nombre = pygame.Rect(40, 250, 300, 60)
 
 
+color_boton_a = BLANCO
+color_boton_b = BLANCO
+color_boton_c = BLANCO
+
 #variables globales
 pregunta_actual = 0
 intentos_restantes = 2
@@ -160,7 +164,7 @@ def preguntas(pregunta_actual):
     - Usa variables globales para modificar las variables en todas las funciones.
     - Pone una imagen como fondo.
     - Muestra la pregunta actual y sus posibles respuestas.
-    - Dibuja los rectángulos para las preguntas, respuestas y retroceder.
+    - Dibuja los rectángulos para las preguntas, respuestas.
     - Pone el texto en donde corresponde.
     - Muestra el puntaje actual y los intentos restantes.
     """
@@ -179,9 +183,12 @@ def preguntas(pregunta_actual):
         pygame.draw.rect(pantalla, BLANCO, rectangulo_pregunta)
         pygame.draw.rect(pantalla, BLANCO, boton_pregunta)
         pygame.draw.rect(pantalla, BLANCO, boton_reiniciar)
-        pygame.draw.rect(pantalla, BLANCO, boton_respuesta_a)
-        pygame.draw.rect(pantalla, BLANCO, boton_respuesta_b)
-        pygame.draw.rect(pantalla, BLANCO, boton_respuesta_c)
+
+        # Aquí es donde se aplican los colores de los botones de respuesta
+        pygame.draw.rect(pantalla, color_boton_a, boton_respuesta_a)
+        pygame.draw.rect(pantalla, color_boton_b, boton_respuesta_b)
+        pygame.draw.rect(pantalla, color_boton_c, boton_respuesta_c)
+        
         pygame.draw.rect(pantalla, CELESTE, rectangulo_score)
         pygame.draw.rect(pantalla, CELESTE, rectangulo_intentos)
 
@@ -200,7 +207,7 @@ def preguntas(pregunta_actual):
 
 
 def verificar_respuesta(opcion):
-    global pregunta_actual, puntaje_actual, intentos_restantes
+    global pregunta_actual, puntaje_actual, intentos_restantes,color_boton_a,color_boton_b,color_boton_c
     """
     Verifica si la opción seleccionada por el jugador es correcta y actualiza el estado del juego.
     Esta función realiza las siguientes acciones:
@@ -218,17 +225,40 @@ def verificar_respuesta(opcion):
         sonido_correcto.play()
         pregunta_actual += 1
         intentos_restantes = 2
+        if opcion == 'a':
+            color_boton_a = VERDE
+        elif opcion == 'b':
+            color_boton_b = VERDE
+        elif opcion == 'c':
+            color_boton_c = VERDE
     else:
         intentos_restantes -= 1
         sonido_incorrecto.play()
-        if intentos_restantes == -1:
+        if intentos_restantes == 0:
             pregunta_actual += 1
             intentos_restantes = 2
+            if opcion == 'a':
+                color_boton_a = ROJO
+            elif opcion == 'b':
+                color_boton_b = ROJO
+            elif opcion == 'c':
+                color_boton_c = ROJO
         else:
             puntaje_actual -= 0
+            if opcion == 'a':
+                color_boton_a = ROJO
+            elif opcion == 'b':
+                color_boton_b = ROJO
+            elif opcion == 'c':
+                color_boton_c = ROJO
     preguntas(pregunta_actual)
 
 
+def resetear_colores_botones():
+    global color_boton_a, color_boton_b, color_boton_c
+    color_boton_a = BLANCO
+    color_boton_b = BLANCO
+    color_boton_c = BLANCO
 
 def reiniciar():
     global pregunta_actual, puntaje_actual, intentos_restantes, color_boton_a, color_boton_b, color_boton_c
