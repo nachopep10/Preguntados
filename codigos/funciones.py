@@ -2,6 +2,8 @@ import pygame
 from datos import lista
 from colores import *
 import json
+import sys
+
 
 pygame.init()
 
@@ -30,9 +32,13 @@ pygame.mixer.music.play(-1) #-1 para que sea infinito
 #icono para el nivel del volumen
 mute = pygame.image.load("C:/Users/ignac/OneDrive/Escritorio/visual/juego/imagenes/mute.png")
 bajo = pygame.image.load("C:/Users/ignac/OneDrive/Escritorio/visual/juego/imagenes/bajo.png")
-intermedio = pygame.image.load("C:/Users/ignac/OneDrive/Escritorio/visual/juego/imagenes/intermedio.png")
 alto = pygame.image.load("C:/Users/ignac/OneDrive/Escritorio/visual/juego/imagenes/alto.png")
 
+# Botón de volumen
+boton_volumen = pygame.Rect(690, 10, 50, 50)
+
+# Estado inicial del volumen
+estado_volumen = 2
 
 #sonido de correcto y incorrecto
 sonido_correcto = pygame.mixer.Sound("C:/Users/ignac/OneDrive/Escritorio/visual/juego/imagenes/correcto.mp3")
@@ -100,8 +106,8 @@ final_nombre = pygame.Rect(40, 250, 300, 60)
 
 #variables globales
 pregunta_actual = 0
-puntaje_actual = 0
 intentos_restantes = 2
+puntaje_actual = 0
 
 
 
@@ -127,30 +133,48 @@ def pantalla_inicio():
     pantalla.blit(texto_puntaje, (boton_puntaje.x + 30, boton_puntaje.y - 4))
     pantalla.blit(texto_salir, (boton_salir.x + 25, boton_salir.y - 4))
 
+    if estado_volumen == 2:
+        pantalla.blit(alto, (boton_volumen.x, boton_volumen.y))
+    elif estado_volumen == 1:
+        pantalla.blit(bajo, (boton_volumen.x, boton_volumen.y))
+    else:
+        pantalla.blit(mute, (boton_volumen.x, boton_volumen.y))
 
-def preguntas():
-    global pregunta_actual, puntaje_actual, intentos_restantes
+
+def cambiar_volumen():
+    global estado_volumen
+    estado_volumen = (estado_volumen + 1) % 3
+    if estado_volumen == 2:
+        pygame.mixer.music.set_volume(0.2)
+    elif estado_volumen == 1:
+        pygame.mixer.music.set_volume(0.1)
+    else:
+        pygame.mixer.music.set_volume(0.0)
+
+
+def preguntas(pregunta_actual):
+    global puntaje_actual, intentos_restantes
     """
     Configura y muestra la pantalla de preguntas del juego Preguntados.
     Esta función realiza las siguientes acciones:
-    - Usa variables globales para mantener el estado del juego a través de diferentes funciones.
+    - Usa variables globales para modificar las variables en todas las funciones.
     - Pone una imagen como fondo.
     - Muestra la pregunta actual y sus posibles respuestas.
     - Dibuja los rectángulos para las preguntas, respuestas y retroceder.
     - Pone el texto en donde corresponde.
     - Muestra el puntaje actual y los intentos restantes.
-    -
     """
+
     pantalla.fill(FONDO)
     pantalla.blit(imagen_fondo2, (0, 0))
 
     if pregunta_actual < len(lista):
         pregunta = lista[pregunta_actual]
-        texto_preguntas = fuente_pregunta.render(pregunta['pregunta'], True, NEGRO)
 
+        texto_preguntas = fuente_pregunta.render(pregunta['pregunta'], True, NEGRO)
         texto_respuesta_1 = fuente_juego.render(f"A-{pregunta['a']}", True, NEGRO)
-        texto_respuesta_2 = fuente_juego.render(f"b-{pregunta['b']}", True, NEGRO)
-        texto_respuesta_3 = fuente_juego.render(f"c-{pregunta['c']}", True, NEGRO)
+        texto_respuesta_2 = fuente_juego.render(f"B-{pregunta['b']}", True, NEGRO)
+        texto_respuesta_3 = fuente_juego.render(f"C-{pregunta['c']}", True, NEGRO)
 
         pygame.draw.rect(pantalla, BLANCO, rectangulo_pregunta)
         pygame.draw.rect(pantalla, BLANCO, boton_pregunta)
@@ -158,17 +182,15 @@ def preguntas():
         pygame.draw.rect(pantalla, BLANCO, boton_respuesta_a)
         pygame.draw.rect(pantalla, BLANCO, boton_respuesta_b)
         pygame.draw.rect(pantalla, BLANCO, boton_respuesta_c)
-        pygame.draw.rect(pantalla, BLANCO, boton_retroceder) 
         pygame.draw.rect(pantalla, CELESTE, rectangulo_score)
         pygame.draw.rect(pantalla, CELESTE, rectangulo_intentos)
-    
-        pantalla.blit(texto_preguntas, (rectangulo_pregunta.x +5, rectangulo_pregunta.y +25))
+
+        pantalla.blit(texto_preguntas, (rectangulo_pregunta.x + 5, rectangulo_pregunta.y + 25))
         pantalla.blit(texto_boton_pregunta, (boton_pregunta.x + 20, boton_pregunta.y + 10))
         pantalla.blit(texto_reiniciar, (boton_reiniciar.x + 40, boton_reiniciar.y + 10))
         pantalla.blit(texto_respuesta_1, (boton_respuesta_a.x + 10, boton_respuesta_a.y + 6))
         pantalla.blit(texto_respuesta_2, (boton_respuesta_b.x + 10, boton_respuesta_b.y + 6))
         pantalla.blit(texto_respuesta_3, (boton_respuesta_c.x + 10, boton_respuesta_c.y + 6))
-        pantalla.blit(texto_retroceder, (boton_retroceder.x + 10, boton_retroceder.y + 10))
 
     texto_puntaje = font.render(f"Puntaje: {puntaje_actual}", True, NEGRO)
     pantalla.blit(texto_puntaje, (rectangulo_score.x + 10, rectangulo_score.y + 10))
@@ -176,19 +198,21 @@ def preguntas():
     pantalla.blit(texto_intentos, (rectangulo_intentos.x + 10, rectangulo_intentos.y + 10))
 
 
+
 def verificar_respuesta(opcion):
     global pregunta_actual, puntaje_actual, intentos_restantes
     """
     Verifica si la opción seleccionada por el jugador es correcta y actualiza el estado del juego.
     Esta función realiza las siguientes acciones:
-    - Usa variables globales para mantener el estado del juego a través de diferentes funciones.
+    - Usa variables globales para modificar las variables en todas las funciones.
     - Verifica si la respuesta seleccionada es correcta.
     - Actualiza el puntaje y el número de intentos restantes según la respuesta del jugador.
     - Reproduce un sonido dependiendo si la respuesta es correcta o incorrecta.
-    - Llama a la función preguntas() para actualizar la pantalla de preguntas.   
+    - Llama a la función preguntas() para actualizar la pantalla de preguntas.
     """
     pregunta = lista[pregunta_actual]
     respuesta_correcta = pregunta['correcta']
+    
     if opcion == respuesta_correcta:
         puntaje_actual += 10
         sonido_correcto.play()
@@ -197,17 +221,145 @@ def verificar_respuesta(opcion):
     else:
         intentos_restantes -= 1
         sonido_incorrecto.play()
-        if intentos_restantes == 0:
+        if intentos_restantes == -1:
             pregunta_actual += 1
             intentos_restantes = 2
-            puntaje_actual -= 10
-            
         else:
-            puntaje_actual -= 10
-    preguntas()
+            puntaje_actual -= 0
+    preguntas(pregunta_actual)
 
 
-def pantalla_final():
+
+def reiniciar():
+    global pregunta_actual, puntaje_actual, intentos_restantes, color_boton_a, color_boton_b, color_boton_c
+    """
+    Reinicia el juego a los valores iniciales.
+    Esta función realiza las siguientes acciones:
+    - Usa variables globales para modificar las variables en todas las funciones.
+    - Restablece los contadores a los valores originales.
+    """
+    pregunta_actual = 0
+    puntaje_actual = 0
+    intentos_restantes = 2
+    color_boton_a = BLANCO
+    color_boton_b = BLANCO
+    color_boton_c = BLANCO
+
+    preguntas(pregunta_actual)
+
+def reiniciar_completo():
+    global menu_inicio, jugando, top, nombre, final, nombre_usuario, activo, puntaje_actual, pregunta_actual
+    menu_inicio = True
+    jugando = False
+    top = False
+    nombre = False
+    final = False
+    nombre_usuario = ''
+    activo = False
+    puntaje_actual = 0
+    pregunta_actual = 0
+    reiniciar()
+
+nombre = ''
+def obtener_nombre_usuario():
+    global nombre, color
+    input_box = pygame.Rect(250, 275, 300, 50)
+    color_inactivo = pygame.Color(VIOLETA)
+    color_activo = pygame.Color(BLANCO)
+    color = color_inactivo
+    activo = False
+    nombre = ''
+    hecho = False
+
+    while not hecho:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if input_box.collidepoint(event.pos):
+                    activo = not activo
+                else:
+                    activo = False
+                color = color_activo if activo else color_inactivo
+            if event.type == pygame.KEYDOWN:
+                if activo:
+                    if event.key == pygame.K_RETURN:
+                        hecho = True
+                    elif event.key == pygame.K_BACKSPACE:
+                        nombre = nombre[:-1]
+                    else:
+                        nombre += event.unicode
+
+        
+        pygame.display.flip()
+
+    return nombre
+
+
+
+
+def puntaje():
+    """
+    Muestra los puntajes más altos guardados en un JSON.
+    Esta función realiza las siguientes acciones:
+    - Coloca una imagen de fondo en la pantalla.
+    - Dibuja un botón de retroceso en la pantalla.
+    - Muestra los tres puntajes más altos junto con los nombres de los jugadores.
+
+    Los puntajes se cargan desde un archivo JSON ubicado en la ruta especificada.
+    """
+    pantalla.fill(FONDO)
+    pantalla.blit(imagen_fondo3, (0, 0))
+    
+    pygame.draw.rect(pantalla, BLANCO, boton_retroceder) 
+    pantalla.blit(texto_retroceder, (boton_retroceder.x + 10, boton_retroceder.y + 10))
+
+    with open("C:/Users/ignac/OneDrive/Escritorio/visual/puntajes.json", "r") as archivo:
+        puntajes = json.load(archivo)
+        
+        texto_top = font.render("Top 3 Puntajes:", True, ROJO)
+        pantalla.blit(texto_top, (260, 40))
+        
+        # Ordena los puntajes en orden descendente y elije los tres primeros
+        top_puntajes = sorted(puntajes, key=lambda x: x["puntaje"], reverse=True)[:3]
+        
+        # Define las posiciones específicas para cada puntaje
+        posiciones = [(350, 290), (190, 310), (470, 325)]
+        
+        for i, item in enumerate(top_puntajes):
+            # muestra cada uno de los tres puntajes más altos y el nombre del jugador.
+            texto_nombre_puntaje = fuente_juego.render(f" {item['nombre']}: {item['puntaje']}", True, NEGRO)
+            # agarra la posición específica para cada puntaje
+            x, y = posiciones[i]  
+            # Muestra el puntaje en la posición que le especifique
+            pantalla.blit(texto_nombre_puntaje, (x, y))  
+
+    pygame.draw.rect(pantalla, BLANCO, boton_retroceder) 
+    pantalla.blit(texto_retroceder, (boton_retroceder.x + 10, boton_retroceder.y + 10))
+
+
+
+def guardar_puntajes(nombre_usuario):
+    global puntaje_actual
+    """
+    Guarda el puntaje de un jugador en un archivo JSON.
+    """
+    try:
+        with open("C:/Users/ignac/OneDrive/Escritorio/visual/puntajes.json", "r") as archivo:
+            puntajes = json.load(archivo)
+    except FileNotFoundError:
+        puntajes = []
+
+    puntajes.append({"nombre": nombre_usuario, "puntaje": puntaje_actual})
+    #con sorted ordeno la lista puntaje, el lambda extrae los puntajes y con reverse se oredena de mayor a menor.
+    puntajes = sorted(puntajes, key=lambda x: x["puntaje"], reverse=True)
+
+    with open("puntajes.json", "w") as archivo:
+        json.dump(puntajes, archivo,indent=4)
+
+
+def pantalla_final(nombre_usuario):
     """
     Configura la pantalla final del juego.
 
@@ -233,96 +385,3 @@ def pantalla_final():
     pantalla.blit(texto_puntaje, (fianl_score.x + 20, fianl_score.y + 7))
     pantalla.blit(texto_retroceder2, (boton_retroceder2.x + 10, boton_retroceder2.y + 10))
 
-
-nombre_usuario = ""
-ingreso_usuario = False
-def ingreso_nombre():
-    """
-    Configura la pantalla en la cual el jugador ingresa su nombre.
-
-    Esta función realiza las siguientes acciones:
-    - Ponel un color de fondo determinado.
-    - Dibuja rectángulos para el botón de aceptar, la pregunta del nombre y otro para el ingreso del nombre.
-    - Muestra el texto del botón de aceptar y la pregunta del nombre.
-    - Muestra el nombre ingresado por el usuario.
-    """
-    pantalla.fill(GRIS)
-    pygame.draw.rect(pantalla, BLANCO, boton_aceptar)
-    pygame.draw.rect(pantalla, BLANCO, pregunta_nombre)
-    pygame.draw.rect(pantalla, BLANCO, boton_nombre)
-    
-    pantalla.blit(texto_aceptar, (boton_aceptar.x +40, boton_aceptar.y + 5))
-    pantalla.blit(texto_nombre, (pregunta_nombre.x +60, pregunta_nombre.y +5 ))
-    
-    texto_ingresado = fuente_juego.render(nombre_usuario, True, NEGRO)
-    pantalla.blit(texto_ingresado, (boton_nombre.x + 10, boton_nombre.y + 10))
-
-
-def reiniciar():
-    global pregunta_actual, puntaje_actual, intentos_restantes, botones_habilitados, color_respuesta_a, color_respuesta_b, color_respuesta_c
-    """
-    Reinicia el juego a los valores iniciales.
-    Esta función realiza las siguientes acciones:
-    - Usa variables globales para modificar el estado del juego a través de diferentes funciones.
-    - Restablece los contadores a los valores originales.
-    """
-    pregunta_actual = 0
-    puntaje_actual = 0
-    intentos_restantes = 2
-    botones_habilitados = True
-
-
-
-def guardar_puntajes(nombre, puntaje):
-    try:
-        with open("C:/Users/ignac/OneDrive/Escritorio/visual/puntajes.json", "r") as archivo:
-            puntajes = json.load(archivo)
-    except FileNotFoundError:
-        puntajes = []
-
-    puntajes.append({"nombre": nombre, "puntaje": puntaje})
-    #con sorted ordeno la lista puntaje, el lambda extrae los puntajes y con reverse se oredena de mayor a menor.
-    puntajes = sorted(puntajes, key=lambda x: x["puntaje"], reverse=True)
-
-    with open("puntajes.json", "w") as archivo:
-        json.dump(puntajes, archivo,indent=4)
-
-
-
-def puntaje():
-    """
-    Muestra los puntajes más altos guardados en un JSON.
-    Esta función realiza las siguientes acciones:
-    - Pone un
-    - Coloca una imagen de fondo en la pantalla.
-    - Dibuja un botón de retroceso en la pantalla.
-    - Muestra los tres puntajes más altos junto con los nombres de los jugadores.
-
-    Los puntajes se cargan desde un archivo JSON ubicado en la ruta especificada.
-    """
-    pantalla.fill(FONDO)
-    pantalla.blit(imagen_fondo3, (0, 0))
-    
-    pygame.draw.rect(pantalla, BLANCO, boton_retroceder) 
-    pantalla.blit(texto_retroceder, (boton_retroceder.x + 10, boton_retroceder.y + 10))
-
-    with open("C:/Users/ignac/OneDrive/Escritorio/visual/puntajes.json", "r") as archivo:
-        puntajes = json.load(archivo)
-        
-        texto_top = font.render("Top 3 Puntajes:", True, ROJO)
-        pantalla.blit(texto_top, (260, 40))
-        
-        # Ordena los puntajes en orden descendente y selecciona los tres primeros
-        top_puntajes = sorted(puntajes, key=lambda x: x["puntaje"], reverse=True)[:3]
-        
-        # Define las posiciones específicas para cada puntaje
-        posiciones = [(300, 280), (190, 310), (470, 325)]
-        
-        for i, item in enumerate(top_puntajes):
-            # Renderiza y muestra cada uno de los tres puntajes más altos junto con el nombre del jugador
-            texto_nombre_puntaje = fuente_juego.render(f"{i+1}. {item['nombre']}: {item['puntaje']}", True, NEGRO)
-            x, y = posiciones[i]  # Obtén la posición específica para cada puntaje
-            pantalla.blit(texto_nombre_puntaje, (x, y))  # Muestra el puntaje en la posición especificada
-
-    pygame.draw.rect(pantalla, BLANCO, boton_retroceder) 
-    pantalla.blit(texto_retroceder, (boton_retroceder.x + 10, boton_retroceder.y + 10))
